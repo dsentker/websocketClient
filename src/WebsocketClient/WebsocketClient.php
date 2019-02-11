@@ -100,6 +100,11 @@ class WebsocketClient
      */
     public function write(string $content, $final = true)
     {
+
+        if(!$this->socket) {
+            return false;
+        }
+
         $messageLength = mb_strlen($content);
 
         $header = chr(($final ? 0x80 : 0) | 0x02); // 0x02 binary
@@ -141,10 +146,14 @@ class WebsocketClient
      *
      * @throws Exception\WebsocketException
      */
-    public function read()
+    public function read(): string
     {
-        $data = '';
 
+        if(!$this->socket) {
+            return '';
+        }
+
+        $data = '';
         do {
             // Read header
             $header = fread($this->socket, 2);
@@ -239,7 +248,6 @@ class WebsocketClient
      */
     protected function requestUpgrade()
     {
-
 
         //Request upgrade to websocket
         $headerString = sprintf("GET / HTTP/1.1\r\n%s\r\n", $this->headerBag->__toString());
