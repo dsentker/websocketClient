@@ -82,7 +82,8 @@ class WebsocketClient
      */
     public function init(int $timeout = 10)
     {
-        $this->socket = @fsockopen($this->host, $this->port, $errno, $errstr, $timeout);
+        //$this->socket = @fsockopen($this->host, $this->port, $errno, $errstr, $timeout);
+        $this->socket = stream_socket_client(sprintf('%s:%d', $this->host, $this->port), $errno, $errstr, $timeout);
         if (!$this->socket) {
             $this->exceptionHandler->handleException(WebsocketWriterException::connectionError($this->host, $errstr, $errno));
         } else {
