@@ -8,7 +8,7 @@
 
 namespace WebsocketClient\Exception;
 
-class WebsocketReaderException extends \ErrorException
+class WebsocketReaderException extends WebsocketException
 {
 
     /**

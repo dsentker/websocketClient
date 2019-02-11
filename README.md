@@ -5,12 +5,23 @@ A simple class to connect to a websocket service. It handles negotiation with th
 ### Install
 ```composer require dsentker/websocket-client``` (WIP)
 
-### Send a message to a websocket Server
+### Send a message to a Websocket Server
 ```php
 $client = new WebsocketClient('localhost', 8080);
+$client->init(); // Init the Websocket Upgrade Request
 $client->write('Hello World!'); // sends a message to websocket server
 $content = $client->read(); // Read from websocket
 ```
+On connection errors, an WebsocketClient\Exception\WebsocketException is thrown. If you want to mute this exceptions (e.g. with an unreliable websocket server or for log purposes) you can pass an ```ExceptionHandler``` handler as third argument of the constructor:
+ ```php
+ $exceptionHandler = new ThrowHandler(); // Throws exceptions, as default
+ $exceptionHandler = new SilentHandler(); // Flushes exceptions down the toilet
+ $exceptionHandler = new LogHandler($yourLogger); // Log exceptions. Use any PSR-3-compatible logger instance here.
+ $client = new WebsocketClient('localhost', 8080, $exceptionHandler);
+ $client->init();
+ $client->write('Hello World!'); 
+
+ ```
 
 ### WebSocket Server
 For an simple Websocket Server example, please visit [Websocket Example](https://github.com/ecoparts/websocket-example) by EcoParts (or implement the Server Library of your choice 😉 ) 

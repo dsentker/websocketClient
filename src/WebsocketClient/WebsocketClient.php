@@ -10,7 +10,9 @@ namespace WebsocketClient;
 
 
 use Symfony\Component\HttpFoundation\HeaderBag;
-use WebsocketClient\Exception\WebsocketException;
+use WebsocketClient\Exception\Handler\ThrowHandler;
+use WebsocketClient\Exception\Handler\WebsocketExceptionHandler;
+use WebsocketClient\Exception\WebsocketWriterException;
 use WebsocketClient\Exception\WebsocketReaderException;
 
 /**
@@ -29,17 +31,29 @@ class WebsocketClient
     private $socket;
 
     /**
+     * @var string
+     */
+    private $host;
+
+    /**
+     * @var int
+     */
+    private $port;
+
+    /**
+     * @var WebsocketExceptionHandler
+     */
+    private $exceptionHandler;
+
+    /**
      * WebsocketClient constructor.
      *
-     * @param string $host    A host URL. It can be a domain name like www.example.com or an IP address, with port
-     *                        number.
-     * @param int    $port
-     * @param int    $timeout The maximum time in seconds, a read operation will wait for an answer from the server.
-     * @param array  $headers Additional HTTP headers (Key-Value pair) to attach to the request.
-     *
-     * @throws WebsocketException
+     * @param string                         $host A host URL. It can be a domain name like www.example.com or an IP address, with port
+     *                                             number.
+     * @param int                            $port
+     * @param WebsocketExceptionHandler|null $exceptionHandler
      */
-    public function __construct(string $host, int $port, int $timeout = 10, array $headers = [])
+    public function __construct(string $host, int $port, ?WebsocketExceptionHandler $exceptionHandler = null)
     {
         // Generate a key (to convince server that the update is not random)
         $key = base64_encode(uniqid());
@@ -53,18 +67,27 @@ class WebsocketClient
             'Sec-WebSocket-Version' => '13'
         ]);
 
-        $this->headerBag->add($headers);
 
-        $this->socket = @fsockopen($host, $port, $errno, $errstr, $timeout);
+        $this->host = $host;
+        $this->port = $port;
+        $this->exceptionHandler = (null === $exceptionHandler) ? new ThrowHandler() : $exceptionHandler;
+    }
+
+    /**
+     * @param int $timeout The maximum time in seconds, a read operation will wait for an answer from the server.
+     *
+     * @throws Exception\WebsocketException
+     */
+    public function init(int $timeout = 10)
+    {
+        $this->socket = @fsockopen($this->host, $this->port, $errno, $errstr, $timeout);
         if (!$this->socket) {
-            throw WebsocketException::connectionError($host, $errstr, $errno);
+            $this->exceptionHandler->handleException(WebsocketWriterException::connectionError($this->host, $errstr, $errno));
         }
 
         stream_set_timeout($this->socket, $timeout);
 
         $this->requestUpgrade();
-
-
     }
 
     /**
@@ -115,7 +138,7 @@ class WebsocketClient
     /**
      * @return string
      *
-     * @throws WebsocketReaderException
+     * @throws Exception\WebsocketException
      */
     public function read()
     {
@@ -125,7 +148,7 @@ class WebsocketClient
             // Read header
             $header = fread($this->socket, 2);
             if (!$header) {
-                throw WebsocketReaderException::headerError();
+                $this->exceptionHandler->handleException(WebsocketReaderException::headerError());
             }
 
             $opcode = ord($header[0]) & 0x0F;
@@ -142,7 +165,7 @@ class WebsocketClient
                 }
                 $header = fread($this->socket, $extLength);
                 if (!$header) {
-                    throw WebsocketReaderException::headerError('Extension');
+                    $this->exceptionHandler->handleException(WebsocketReaderException::headerError('Extension'));
                 }
 
                 // Set extended payload length
@@ -156,7 +179,7 @@ class WebsocketClient
             if ($masked) {
                 $mask = fread($this->socket, 4);
                 if (!$mask) {
-                    throw WebsocketReaderException::headerError('Mask');
+                    $this->exceptionHandler->handleException(WebsocketReaderException::headerError('Mask'));
                 }
             }
 
@@ -165,7 +188,7 @@ class WebsocketClient
             do {
                 $frame = fread($this->socket, $payloadLength);
                 if (!$frame) {
-                    throw WebsocketReaderException::generalError();
+                    $this->exceptionHandler->handleException(WebsocketReaderException::generalError());
                 }
                 $payloadLength -= strlen($frame);
                 $frameData .= $frame;
@@ -211,8 +234,7 @@ class WebsocketClient
 
     /**
      * @return string The response from websocket
-     *
-     * @throws WebsocketException
+     * @throws Exception\WebsocketException
      */
     protected function requestUpgrade()
     {
@@ -222,7 +244,7 @@ class WebsocketClient
         $headerString = sprintf("GET / HTTP/1.1\r\n%s\r\n", $this->headerBag->__toString());
         $rc = fwrite($this->socket, $headerString);
         if (!$rc) {
-            throw WebsocketException::upgradeRequestError($this->headerBag->get('Host'));
+            $this->exceptionHandler->handleException(WebsocketWriterException::upgradeRequestError($this->headerBag->get('Host')));
         }
 
         // Read response into an associative array of headers. Fails if upgrade fails.
@@ -233,7 +255,7 @@ class WebsocketClient
             (!self::headerStringContains($responseHeader, 'HTTP/1.1 101')) ||
             (!self::headerStringContains($responseHeader, 'Sec-Websocket-Accept'))
         ) {
-            throw WebsocketException::upgradeResponseError((string)$responseHeader);
+            $this->exceptionHandler->handleException(WebsocketWriterException::upgradeResponseError((string)$responseHeader));
         }
 
         // The key we send is returned, concatenate with "258EAFA5-E914-47DA-95CA-
@@ -242,5 +264,14 @@ class WebsocketClient
         return $responseHeader;
 
     }
+
+    /**
+     * @return HeaderBag
+     */
+    public function getHeaderBag(): HeaderBag
+    {
+        return $this->headerBag;
+    }
+
 
 }
