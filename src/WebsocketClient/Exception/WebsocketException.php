@@ -41,7 +41,7 @@ class WebsocketException extends \ErrorException
      */
     public static function upgradeResponseError(string $headerString)
     {
-        return new static('Server did not accept to upgrade connection to websocket (response was "%s"!', $headerString);
+        return new static(sprintf('Server did not accept to upgrade connection to websocket (response was "%s")!', $headerString));
     }
 
 }

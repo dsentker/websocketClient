@@ -55,9 +55,9 @@ class WebsocketClient
 
         $this->headerBag->add($headers);
 
-        $this->socket = fsockopen($host, $port, $errno, $errstr, $timeout);
+        $this->socket = @fsockopen($host, $port, $errno, $errstr, $timeout);
         if (!$this->socket) {
-            throw WebsocketException::connectionError($host, $errno, $errstr);
+            throw WebsocketException::connectionError($host, $errstr, $errno);
         }
 
         stream_set_timeout($this->socket, $timeout);
@@ -193,7 +193,7 @@ class WebsocketClient
      */
     private static function headerStringContains($headerString, $search)
     {
-        return false !== strpos($headerString, $search);
+        return false !== stripos($headerString, $search);
     }
 
     /**
@@ -206,7 +206,7 @@ class WebsocketClient
 
 
         //Request upgrade to websocket
-        $headerString = sprintf("GET / HTTP/1.1\r\n%s", $this->headerBag->__toString());
+        $headerString = sprintf("GET / HTTP/1.1\r\n%s\r\n", $this->headerBag->__toString());
         $rc = fwrite($this->socket, $headerString);
         if (!$rc) {
             throw WebsocketException::upgradeRequestError($this->headerBag->get('Host'));
@@ -216,11 +216,11 @@ class WebsocketClient
         $responseHeader = fread($this->socket, 1024);
 
         if (
-            (!$responseHeader) ||
-            (!self::headerStringContains($responseHeader, ' 101 ')) ||
-            (!self::headerStringContains($responseHeader, ' Sec-Websocket-Accept: '))
+            (empty($responseHeader)) ||
+            (!self::headerStringContains($responseHeader, 'HTTP/1.1 101')) ||
+            (!self::headerStringContains($responseHeader, 'Sec-Websocket-Accept'))
         ) {
-            throw WebsocketException::upgradeResponseError($responseHeader);
+            throw WebsocketException::upgradeResponseError((string)$responseHeader);
         }
 
         // The key we send is returned, concatenate with "258EAFA5-E914-47DA-95CA-
