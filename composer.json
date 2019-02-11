@@ -1,6 +1,6 @@
 {
     "name": "dsentker/websocket-client",
-    "description": "A simple PHP client for a websocket server",
+    "description": "A simple PHP client for an existing websocket server",
     "version": "0.1.1",
     "type": "library",
     "keywords": ["websocket"],
