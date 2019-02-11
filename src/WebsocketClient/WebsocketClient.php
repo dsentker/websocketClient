@@ -74,6 +74,8 @@ class WebsocketClient
     }
 
     /**
+     * @required when this class is used as a symfony service.
+     *
      * @param int $timeout The maximum time in seconds, a read operation will wait for an answer from the server.
      *
      * @throws Exception\WebsocketException
@@ -83,11 +85,11 @@ class WebsocketClient
         $this->socket = @fsockopen($this->host, $this->port, $errno, $errstr, $timeout);
         if (!$this->socket) {
             $this->exceptionHandler->handleException(WebsocketWriterException::connectionError($this->host, $errstr, $errno));
+        } else {
+            stream_set_timeout($this->socket, $timeout);
+            $this->requestUpgrade();
         }
 
-        stream_set_timeout($this->socket, $timeout);
-
-        $this->requestUpgrade();
     }
 
     /**
@@ -98,7 +100,6 @@ class WebsocketClient
      */
     public function write(string $content, $final = true)
     {
-
         $messageLength = mb_strlen($content);
 
         $header = chr(($final ? 0x80 : 0) | 0x02); // 0x02 binary

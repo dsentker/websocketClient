@@ -1,12 +1,12 @@
 {
     "name": "dsentker/websocket-client",
     "description": "A simple PHP client for an existing websocket server",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "time": "2019-02-11",
     "type": "library",
     "keywords": ["websocket", "websocket-client"],
     "homepage": "https://github.com/dsentker/websocketClient",
-"license": "unlicense",
+    "license": "unlicense",
     "autoload": {
         "psr-4": {
             "WebsocketClient\\": "src/WebsocketClient/"
