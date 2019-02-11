@@ -1,0 +1,28 @@
+{
+    "name": "dsentker/websocket-client",
+    "description": "A simple PHP client for a websocket server",
+    "version": "0.1.0",
+    "type": "library",
+    "keywords": ["websocket"],
+    "homepage": "https://github.com/dsentker/websocketClient",
+    "time": "2019-02-11",
+    "license": "unlicense",
+    "authors": [
+        {
+            "name": "Daniel Sentker",
+            "email": "tracid2008@gmail.com",
+            "homepage": "https://github.com/dsentker",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/dsentker/websocketClient/issues",
+        "source": "https://github.com/dsentker/websocketClient",
+        "docs": "https://github.com/dsentker/websocketClient/blob/master/README.md"
+    },
+
+    "require": {
+        "symfony/http-foundation": "^4.2",
+        "php": ">7.1.0"
+    }
+}
