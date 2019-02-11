@@ -100,6 +100,19 @@ class WebsocketClient
     }
 
     /**
+     * @param \JsonSerializable|array $data
+     *
+     * @return bool|int
+     */
+    public function writeArrayData($data)
+    {
+        return $this->write(
+            json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK)
+        );
+
+    }
+
+    /**
      * @return string
      *
      * @throws WebsocketReaderException
